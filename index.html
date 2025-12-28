@@ -3,554 +3,1112 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AURA | Botanical Research</title>
+    <title>AURA | Advanced Digital Flora Research</title>
     
-    <!-- Fonts: Inter for readability, Space Mono for technical details -->
+    <!-- Fonts: Inter & Space Mono -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;700&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
     
-    <!-- Three.js -->
+    <!-- Three.js (R128 for stability in single files) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <!-- GSAP for robust animations -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
 
     <style>
+        /* --- 1. VARIABLES & RESET --- */
         :root {
-            /* Palette: Scientific, Earthy, Clean */
-            --bg-color: #f2f2ef; /* Off-white */
-            --text-main: #1a1a1a;
-            --text-muted: #666666;
-            --accent-green: #2d4a3e;
-            --accent-earth: #8c7b70;
-            --card-bg: #ffffff;
-            --border-color: rgba(0,0,0,0.08);
+            /* Palette: Deep Bio-Tech */
+            --bg-dark: #0a0f0d;
+            --bg-panel: rgba(20, 28, 25, 0.7);
+            --text-main: #e0e6e3;
+            --text-muted: #8ba39a;
+            --accent-green: #4ade80;
+            --accent-cyan: #2dd4bf;
+            --accent-alert: #f87171;
+            --border-color: rgba(74, 222, 128, 0.15);
             
-            /* Spacing & Typography */
+            /* Typography */
             --font-main: 'Inter', sans-serif;
             --font-mono: 'Space Mono', monospace;
+            
+            /* Spacing */
+            --spacing-xs: 0.5rem;
             --spacing-sm: 1rem;
             --spacing-md: 2rem;
             --spacing-lg: 4rem;
+            --spacing-xl: 8rem;
+
+            /* UI Elements */
+            --glass: blur(12px);
+            --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
         }
 
-        /* --- Reset & Base --- */
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
 
+        html {
+            scroll-behavior: smooth;
+        }
+
         body {
-            background-color: var(--bg-color);
+            background-color: var(--bg-dark);
             color: var(--text-main);
             font-family: var(--font-main);
-            line-height: 1.6;
             overflow-x: hidden;
-            -webkit-font-smoothing: antialiased;
+            cursor: none; /* Custom cursor */
+            line-height: 1.6;
         }
 
-        /* --- WebGL Background --- */
-        #canvas-container {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100vh;
-            z-index: -1;
-            opacity: 0.6;
-            pointer-events: none;
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: var(--bg-dark);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: var(--accent-green);
+            border-radius: 3px;
         }
 
-        /* --- Layout Structures --- */
+        /* --- 2. UTILITIES & TYPOGRAPHY --- */
         .container {
-            width: 90%;
-            max-width: 1400px;
+            width: 92%;
+            max-width: 1600px;
             margin: 0 auto;
             position: relative;
             z-index: 2;
         }
 
-        /* --- Header / Nav --- */
+        h1, h2, h3 {
+            font-weight: 400;
+            letter-spacing: -0.03em;
+        }
+
+        .mono {
+            font-family: var(--font-mono);
+            text-transform: uppercase;
+            font-size: 0.75rem;
+            letter-spacing: 0.1em;
+        }
+
+        .text-gradient {
+            background: linear-gradient(90deg, var(--accent-green), var(--accent-cyan));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .btn {
+            display: inline-block;
+            padding: 1rem 2rem;
+            border: 1px solid var(--border-color);
+            color: var(--accent-green);
+            font-family: var(--font-mono);
+            text-decoration: none;
+            font-size: 0.8rem;
+            transition: all 0.3s var(--ease-out);
+            position: relative;
+            overflow: hidden;
+            background: transparent;
+            cursor: none;
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--accent-green);
+            transform: scaleX(0);
+            transform-origin: right;
+            transition: transform 0.4s var(--ease-out);
+            z-index: -1;
+        }
+
+        .btn:hover {
+            color: var(--bg-dark);
+        }
+
+        .btn:hover::before {
+            transform: scaleX(1);
+            transform-origin: left;
+        }
+
+        /* --- 3. CUSTOM CURSOR --- */
+        #cursor {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 20px;
+            height: 20px;
+            border: 1px solid var(--accent-green);
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 9999;
+            transform: translate(-50%, -50%);
+            transition: width 0.3s, height 0.3s, background-color 0.3s;
+            mix-blend-mode: difference;
+        }
+        
+        #cursor.hovered {
+            width: 50px;
+            height: 50px;
+            background-color: rgba(74, 222, 128, 0.2);
+            border-color: transparent;
+        }
+
+        /* --- 4. LOADER --- */
+        #loader {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100vh;
+            background: var(--bg-dark);
+            z-index: 10000;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            transition: transform 0.8s var(--ease-out);
+        }
+
+        .loader-text {
+            font-family: var(--font-mono);
+            color: var(--accent-green);
+            font-size: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .loader-bar {
+            width: 200px;
+            height: 2px;
+            background: #1a2f29;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .loader-progress {
+            position: absolute;
+            top: 0;
+            left: 0;
+            height: 100%;
+            width: 0%;
+            background: var(--accent-green);
+        }
+
+        /* --- 5. NAVIGATION --- */
         nav {
+            padding: var(--spacing-md) 0;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: var(--spacing-md) 0;
-            mix-blend-mode: multiply;
+            mix-blend-mode: exclusion;
         }
 
         .brand {
             font-family: var(--font-mono);
             font-weight: 700;
-            font-size: 1.2rem;
-            letter-spacing: -0.05em;
-            color: var(--accent-green);
-        }
-
-        .nav-items {
-            display: flex;
-            gap: var(--spacing-md);
-            list-style: none;
-        }
-
-        .nav-link {
-            text-decoration: none;
-            color: var(--text-main);
-            font-family: var(--font-mono);
-            font-size: 0.85rem;
-            text-transform: uppercase;
-            position: relative;
-        }
-
-        .nav-link::after {
-            content: '';
-            position: absolute;
-            bottom: -4px;
-            left: 0;
-            width: 0%;
-            height: 1px;
-            background-color: var(--accent-green);
-            transition: width 0.3s ease;
-        }
-
-        .nav-link:hover::after {
-            width: 100%;
-        }
-
-        /* --- Hero Section --- */
-        header {
-            padding: 10vh 0;
-            max-width: 800px;
-        }
-
-        h1 {
-            font-size: clamp(3rem, 6vw, 6rem);
-            font-weight: 300;
-            letter-spacing: -0.03em;
-            line-height: 1.1;
-            margin-bottom: var(--spacing-md);
-            opacity: 0;
-            transform: translateY(20px);
-            animation: fadeInUp 0.8s ease forwards 0.2s;
-        }
-
-        .hero-desc {
-            font-family: var(--font-mono);
-            color: var(--text-muted);
-            max-width: 400px;
-            opacity: 0;
-            transform: translateY(20px);
-            animation: fadeInUp 0.8s ease forwards 0.4s;
-        }
-
-        /* --- Masonry Grid Layout --- */
-        .masonry-grid {
-            column-count: 3;
-            column-gap: var(--spacing-md);
-            padding-bottom: var(--spacing-lg);
-        }
-
-        @media (max-width: 1024px) { .masonry-grid { column-count: 2; } }
-        @media (max-width: 600px) { .masonry-grid { column-count: 1; } }
-
-        .grid-item {
-            break-inside: avoid;
-            margin-bottom: var(--spacing-md);
-            background: var(--card-bg);
-            border: 1px solid var(--border-color);
-            padding: 1rem;
-            transition: transform 0.4s var(--easing), box-shadow 0.4s ease;
-            opacity: 0; /* Hidden for scroll observer */
-            transform: translateY(30px);
-        }
-
-        .grid-item:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 15px 30px rgba(0,0,0,0.05);
-            border-color: var(--accent-earth);
-        }
-
-        /* Content Types within Grid */
-        .item-image {
-            width: 100%;
-            height: auto;
-            display: block;
-            margin-bottom: 1rem;
-            filter: grayscale(100%);
-            transition: filter 0.4s ease;
-        }
-
-        .grid-item:hover .item-image {
-            filter: grayscale(0%);
-        }
-
-        .item-meta {
-            font-family: var(--font-mono);
-            font-size: 0.7rem;
-            color: var(--text-muted);
-            margin-bottom: 0.5rem;
-            display: flex;
-            justify-content: space-between;
-        }
-
-        .item-title {
-            font-size: 1.25rem;
-            font-weight: 400;
-            color: var(--text-main);
-            margin-bottom: 0.5rem;
-        }
-
-        .item-caption {
-            font-size: 0.9rem;
-            color: var(--text-muted);
-        }
-
-        /* Full width text block in masonry */
-        .grid-item.span-full {
-            grid-column: span 3;
-        }
-        
-        .stat-block {
-            background-color: var(--accent-green);
+            font-size: 1.5rem;
             color: #fff;
-            padding: 2rem;
-            text-align: center;
-        }
-        .stat-number {
-            font-size: 3rem;
-            font-family: var(--font-mono);
-            display: block;
         }
 
-        /* --- Side Progress Bar (Minimalism) --- */
-        .progress-container {
+        .menu-btn {
+            background: none;
+            border: none;
+            color: #fff;
+            font-family: var(--font-mono);
+            font-size: 0.9rem;
+            cursor: none;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+        }
+
+        /* Overlay Menu */
+        .menu-overlay {
             position: fixed;
-            right: 20px;
-            top: 50%;
-            transform: translateY(-50%);
-            height: 200px;
-            width: 1px;
-            background: #e0e0e0;
-            z-index: 10;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: space-between;
-        }
-
-        .progress-bar {
+            top: 0;
+            left: 0;
             width: 100%;
-            height: 0%;
-            background-color: var(--accent-green);
-            transition: height 0.1s linear;
-        }
-
-        .progress-label {
-            font-family: var(--font-mono);
-            font-size: 0.6rem;
-            writing-mode: vertical-rl;
-            text-orientation: mixed;
-            color: var(--text-muted);
-            letter-spacing: 2px;
-            margin-top: 10px;
-        }
-
-        /* --- Footer --- */
-        footer {
-            border-top: 1px solid var(--border-color);
-            padding: var(--spacing-lg) 0;
-            margin-top: var(--spacing-lg);
+            height: 100vh;
+            background: rgba(10, 15, 13, 0.95);
+            backdrop-filter: blur(10px);
+            z-index: 500;
             display: flex;
-            flex-direction: column;
-            gap: var(--spacing-md);
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.5s ease;
+        }
+
+        .menu-overlay.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        .menu-links {
+            list-style: none;
             text-align: center;
         }
 
-        .footer-cta {
-            font-size: clamp(2rem, 5vw, 4rem);
-            font-weight: 300;
-            text-decoration: none;
+        .menu-link {
+            display: block;
+            font-size: 4rem;
             color: var(--text-main);
+            text-decoration: none;
+            font-weight: 300;
+            margin-bottom: 1rem;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: color 0.3s;
+            cursor: none;
         }
 
-        .footer-cta:hover {
+        .menu-link:hover {
             color: var(--accent-green);
             font-style: italic;
         }
 
-        /* --- Animations --- */
-        @keyframes fadeInUp {
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
+        /* --- 6. HERO SECTION (3D) --- */
+        #hero {
+            height: 100vh;
+            width: 100%;
+            position: relative;
+            display: flex;
+            align-items: center;
+            overflow: hidden;
         }
 
-        .in-view {
-            animation: fadeInUp 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+        #canvas-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+
+        .hero-content {
+            position: relative;
+            z-index: 2;
+            pointer-events: none; /* Let clicks pass to 3D */
+        }
+
+        .hero-label {
+            display: block;
+            color: var(--accent-cyan);
+            margin-bottom: var(--spacing-sm);
+        }
+
+        .hero-title {
+            font-size: clamp(3rem, 8vw, 8rem);
+            line-height: 0.9;
+            margin-bottom: var(--spacing-md);
+            color: #fff;
+            opacity: 0; /* JS reveal */
+            transform: translateY(30px);
+        }
+
+        .hero-desc {
+            max-width: 500px;
+            color: var(--text-muted);
+            font-size: 1.1rem;
+            opacity: 0;
+            transform: translateY(30px);
+        }
+
+        .scroll-indicator {
+            position: absolute;
+            bottom: var(--spacing-md);
+            right: var(--spacing-md);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            z-index: 2;
+            opacity: 0.7;
+        }
+
+        .mouse {
+            width: 20px;
+            height: 35px;
+            border: 1px solid var(--text-muted);
+            border-radius: 15px;
+            position: relative;
+        }
+
+        .wheel {
+            width: 2px;
+            height: 6px;
+            background: var(--accent-green);
+            position: absolute;
+            top: 8px;
+            left: 50%;
+            transform: translateX(-50%);
+            animation: scroll 2s infinite;
+        }
+
+        @keyframes scroll {
+            0% { top: 8px; opacity: 1; }
+            100% { top: 20px; opacity: 0; }
+        }
+
+        /* --- 7. DATA VISUALIZATION SECTION --- */
+        #data-viz {
+            padding: var(--spacing-xl) 0;
+            position: relative;
+            background: linear-gradient(to bottom, var(--bg-dark), #0f1613);
+        }
+
+        .section-header {
+            margin-bottom: var(--spacing-lg);
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: var(--spacing-sm);
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+        }
+
+        .data-grid {
+            display: grid;
+            grid-template-columns: 1fr 300px;
+            gap: var(--spacing-md);
+        }
+
+        .canvas-wrapper {
+            background: rgba(0,0,0,0.3);
+            border: 1px solid var(--border-color);
+            height: 400px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        canvas#bio-canvas {
+            width: 100%;
+            height: 100%;
+        }
+
+        .data-panel {
+            display: flex;
+            flex-direction: column;
+            gap: var(--spacing-sm);
+        }
+
+        .data-card {
+            background: var(--bg-panel);
+            border: 1px solid var(--border-color);
+            padding: var(--spacing-md);
+            backdrop-filter: var(--glass);
+        }
+
+        .data-value {
+            font-size: 2rem;
+            font-family: var(--font-mono);
+            color: var(--accent-green);
+        }
+
+        /* --- 8. SPECIMEN GRID (MASONRY) --- */
+        #collection {
+            padding: var(--spacing-xl) 0;
+        }
+
+        .masonry-grid {
+            column-count: 3;
+            column-gap: var(--spacing-md);
+        }
+
+        @media (max-width: 1024px) { .masonry-grid { column-count: 2; } }
+        @media (max-width: 768px) { 
+            .masonry-grid { column-count: 1; }
+            .data-grid { grid-template-columns: 1fr; }
+        }
+
+        .grid-item {
+            break-inside: avoid;
+            margin-bottom: var(--spacing-md);
+            position: relative;
+            cursor: none;
+            opacity: 0;
+            transform: translateY(40px);
+            transition: transform 0.5s var(--ease-out);
+        }
+
+        .item-inner {
+            position: relative;
+            overflow: hidden;
+            border: 1px solid var(--border-color);
+        }
+
+        .item-img {
+            width: 100%;
+            height: auto;
+            display: block;
+            transition: transform 0.7s var(--ease-out), filter 0.5s ease;
+            filter: grayscale(100%) contrast(1.1);
+        }
+
+        .grid-item:hover .item-img {
+            transform: scale(1.05);
+            filter: grayscale(0%) contrast(1);
+        }
+
+        .item-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(to top, rgba(0,0,0,0.8), transparent);
+            opacity: 0;
+            transition: opacity 0.4s ease;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            padding: var(--spacing-sm);
+        }
+
+        .grid-item:hover .item-overlay {
+            opacity: 1;
+        }
+
+        .item-id {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: var(--bg-dark);
+            padding: 4px 8px;
+            font-family: var(--font-mono);
+            font-size: 0.6rem;
+            color: var(--accent-green);
+            border: 1px solid var(--border-color);
+        }
+
+        .item-title {
+            color: #fff;
+            font-size: 1.2rem;
+            margin-bottom: 4px;
+        }
+
+        /* --- 9. MODAL --- */
+        #modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100vh;
+            background: rgba(0,0,0,0.9);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.4s ease;
+        }
+
+        #modal.open {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        .modal-content {
+            width: 80%;
+            max-width: 1000px;
+            height: 80vh;
+            background: #111;
+            border: 1px solid var(--border-color);
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .modal-img-container {
+            background: #000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        .modal-img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .modal-info {
+            padding: var(--spacing-lg);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            background: var(--bg-dark);
+        }
+
+        .modal-close {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: none;
+            border: none;
+            color: #fff;
+            font-size: 2rem;
+            cursor: none;
+            z-index: 10;
+        }
+
+        .scan-line {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: var(--accent-green);
+            box-shadow: 0 0 10px var(--accent-green);
+            animation: scan 3s linear infinite;
+            pointer-events: none;
+            z-index: 5;
+            opacity: 0.5;
+        }
+
+        @keyframes scan {
+            0% { top: 0%; }
+            100% { top: 100%; }
+        }
+
+        /* --- 10. FOOTER --- */
+        footer {
+            border-top: 1px solid var(--border-color);
+            padding: var(--spacing-xl) 0;
+            margin-top: var(--spacing-xl);
+            text-align: center;
+            background: linear-gradient(to top, #05100b, var(--bg-dark));
+        }
+
+        .footer-cta {
+            font-size: clamp(2rem, 5vw, 4rem);
+            color: var(--text-main);
+            text-decoration: none;
+            display: block;
+            margin-bottom: var(--spacing-md);
+            transition: color 0.3s;
+        }
+
+        .footer-cta:hover {
+            color: var(--accent-cyan);
         }
     </style>
 </head>
 <body>
 
-    <!-- WebGL Fog Background -->
-    <div id="canvas-container"></div>
-
-    <!-- Minimal Progress Indicator -->
-    <div class="progress-container">
-        <div style="flex-grow:1; width:100%; background: rgba(0,0,0,0.1); position:relative;">
-            <div class="progress-bar" id="progress-bar"></div>
+    <!-- PRELOADER -->
+    <div id="loader">
+        <div class="loader-text">INITIALIZING AURA_CORE_V2.0</div>
+        <div class="loader-bar">
+            <div class="loader-progress"></div>
         </div>
-        <span class="progress-label">SCROLL</span>
     </div>
 
-    <main class="container">
-        <!-- Navigation -->
-        <nav>
-            <div class="brand">AURA_LAB</div>
-            <ul class="nav-items">
-                <li><a href="#" class="nav-link">Research</a></li>
-                <li><a href="#" class="nav-link">Specimens</a></li>
-                <li><a href="#" class="nav-link">Contact</a></li>
-            </ul>
-        </nav>
+    <!-- CUSTOM CURSOR -->
+    <div id="cursor"></div>
 
-        <!-- Hero -->
-        <header>
-            <h1>Cultivating the <br>Digital Flora.</h1>
+    <!-- NAVIGATION -->
+    <nav class="container">
+        <div class="brand">AURA_LAB</div>
+        <button class="menu-btn magnetic" onclick="toggleMenu()">MENU</button>
+    </nav>
+
+    <!-- OVERLAY MENU -->
+    <div class="menu-overlay">
+        <ul class="menu-links">
+            <li><a href="#" class="menu-link">Research</a></li>
+            <li><a href="#" class="menu-link">Specimens</a></li>
+            <li><a href="#" class="menu-link">Data Visualization</a></li>
+            <li><a href="#" class="menu-link">Contact</a></li>
+        </ul>
+    </div>
+
+    <!-- 3D HERO -->
+    <header id="hero">
+        <div id="canvas-container"></div>
+        <div class="container hero-content">
+            <span class="mono hero-label">System Online</span>
+            <h1 class="hero-title">Digital Flora <br> Synthesis</h1>
             <p class="hero-desc">
-                We analyze organic data structures to generate sustainable digital ecosystems. 
-                Bridging the gap between botanical science and algorithmic design.
+                Advancing botanical research through procedural generation and bio-mimetic algorithmic structures. We cultivate the digital ecosystem.
             </p>
-        </header>
+        </div>
+        <div class="scroll-indicator">
+            <div class="mouse"><div class="wheel"></div></div>
+            <span class="mono">SCROLL</span>
+        </div>
+    </header>
 
-        <!-- Masonry Content Grid -->
-        <section class="masonry-grid">
-            
-            <!-- Item 1: Image -->
-            <article class="grid-item">
-                <div class="item-meta">
-                    <span>ID: 042</span>
-                    <span>FIG. A</span>
-                </div>
-                <img src="https://picsum.photos/seed/plant1/500/600" alt="Botanical Specimen" class="item-image">
-                <h3 class="item-title">Monstera Analysis</h3>
-                <p class="item-caption">Structural integrity of leaves in high-velocity wind simulations.</p>
-            </article>
-
-            <!-- Item 2: Text/Stat -->
-            <article class="grid-item stat-block">
-                <span class="stat-number">84%</span>
-                <span class="item-caption" style="color: rgba(255,255,255,0.8);">Efficiency increase in bio-mimetic UI.</span>
-            </article>
-
-            <!-- Item 3: Image -->
-            <article class="grid-item">
-                <div class="item-meta">
-                    <span>ID: 089</span>
-                    <span>FIG. B</span>
-                </div>
-                <img src="https://picsum.photos/seed/leaf2/500/400" alt="Leaf Texture" class="item-image">
-                <h3 class="item-title">Photosynthesis Data</h3>
-                <p class="item-caption">Real-time visualization of energy conversion rates.</p>
-            </article>
-
-            <!-- Item 4: Tall Image -->
-            <article class="grid-item">
-                <div class="item-meta">
-                    <span>ID: 102</span>
-                    <span>FIG. C</span>
-                </div>
-                <img src="https://picsum.photos/seed/forest3/500/800" alt="Forest Density" class="item-image">
-                <h3 class="item-title">Canopy Density</h3>
-                <p class="item-caption">Mapping light penetration layers for optimal solar placement.</p>
-            </article>
-
-            <!-- Item 5: Text Quote -->
-            <article class="grid-item" style="background: transparent; border: none;">
-                <h3 class="item-title" style="font-size: 1.5rem; font-style: italic;">"Nature does not hurry, yet everything is accomplished."</h3>
-                <p class="item-meta" style="margin-top: 1rem;">— Lao Tzu</p>
-            </article>
-
-            <!-- Item 6: Image -->
-            <article class="grid-item">
-                <div class="item-meta">
-                    <span>ID: 115</span>
-                    <span>FIG. D</span>
-                </div>
-                <img src="https://picsum.photos/seed/micro4/500/500" alt="Micro Structure" class="item-image">
-                <h3 class="item-title">Cellular Automata</h3>
-                <p class="item-caption">Applying Conway's Game of Life to moss growth patterns.</p>
-            </article>
-
-            <!-- Item 7: Wide Text -->
-            <article class="grid-item">
-                <h3 class="item-title">Methodology</h3>
-                <p class="item-caption">
-                    We don't just design websites; we cultivate them. Using a proprietary algorithm based on Phyllotaxis (the arrangement of leaves on a plant stem), we organize content in the most mathematically pleasing way possible.
-                </p>
-            </article>
-
-             <!-- Item 8: Image -->
-             <article class="grid-item">
-                <div class="item-meta">
-                    <span>ID: 201</span>
-                    <span>FIG. E</span>
-                </div>
-                <img src="https://picsum.photos/seed/root5/500/600" alt="Root Systems" class="item-image">
-                <h3 class="item-title">Deep Roots</h3>
-                <p class="item-caption">Backend infrastructure designed to mimic mycelial networks.</p>
-            </article>
-
-        </section>
-
-        <!-- Footer -->
-        <footer>
-            <a href="mailto:hello@aura.lab" class="footer-cta">Initiate Project</a>
-            <div style="display: flex; justify-content: center; gap: 2rem; font-family: var(--font-mono); font-size: 0.8rem; color: var(--text-muted);">
-                <span>© 2024 AURA LAB</span>
-                <span>—</span>
-                <span>PRIVACY</span>
-                <span>TERMS</span>
+    <!-- DATA VIZ SECTION -->
+    <section id="data-viz" class="container">
+        <div class="section-header">
+            <div>
+                <span class="mono" style="color: var(--accent-green);">Live Monitoring</span>
+                <h2>Real-time Bio-Metrics</h2>
             </div>
-        </footer>
-    </main>
+            <div class="mono">STATUS: OPTIMAL</div>
+        </div>
+
+        <div class="data-grid">
+            <div class="canvas-wrapper">
+                <canvas id="bio-canvas"></canvas>
+            </div>
+            <div class="data-panel">
+                <div class="data-card">
+                    <span class="mono">Photosynthesis Rate</span>
+                    <div class="data-value" id="stat-1">00.00%</div>
+                    <div style="height: 2px; background: #333; margin-top: 10px;">
+                        <div style="width: 85%; height: 100%; background: var(--accent-cyan);"></div>
+                    </div>
+                </div>
+                <div class="data-card">
+                    <span class="mono">Nutrient Uptake</span>
+                    <div class="data-value" id="stat-2">0.00 mg/L</div>
+                    <div style="height: 2px; background: #333; margin-top: 10px;">
+                        <div style="width: 62%; height: 100%; background: var(--accent-green);"></div>
+                    </div>
+                </div>
+                <div class="data-card">
+                    <span class="mono">Network Integrity</span>
+                    <div class="data-value" style="color: var(--accent-alert);">CRITICAL</div>
+                    <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 5px;">
+                        Root system expansion detected in Sector 7.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- SPECIMEN GRID -->
+    <section id="collection" class="container">
+        <div class="section-header">
+            <h2>Specimen Database</h2>
+            <span class="mono">Showing 6 of 4,022</span>
+        </div>
+
+        <div class="masonry-grid">
+            <!-- Generated via JS for efficiency, but structure here for reference -->
+            <article class="grid-item" data-id="042" data-title="Monstera Deliciosa V2" data-desc="Structural integrity tests show 40% increase in wind resistance due to reinforced digital cell walls.">
+                <div class="item-inner">
+                    <span class="item-id">ID: 042</span>
+                    <img src="https://picsum.photos/seed/plant1/600/800" class="item-img" alt="Specimen">
+                    <div class="item-overlay">
+                        <h3 class="item-title">Monstera V2</h3>
+                        <span class="mono">View Analysis</span>
+                    </div>
+                </div>
+            </article>
+
+            <article class="grid-item" data-id="089" data-title="Fern Algorithm" data-desc="Procedural generation of fractal patterns based on Golden Ratio calculations.">
+                <div class="item-inner">
+                    <span class="item-id">ID: 089</span>
+                    <img src="https://picsum.photos/seed/plant2/600/600" class="item-img" alt="Specimen">
+                    <div class="item-overlay">
+                        <h3 class="item-title">Fern Algorithm</h3>
+                        <span class="mono">View Analysis</span>
+                    </div>
+                </div>
+            </article>
+
+            <article class="grid-item" data-id="102" data-title="Succulent Data" data-desc="High-efficiency water storage simulation for arid climate infrastructure.">
+                <div class="item-inner">
+                    <span class="item-id">ID: 102</span>
+                    <img src="https://picsum.photos/seed/cactus3/600/700" class="item-img" alt="Specimen">
+                    <div class="item-overlay">
+                        <h3 class="item-title">Succulent Data</h3>
+                        <span class="mono">View Analysis</span>
+                    </div>
+                </div>
+            </article>
+
+            <article class="grid-item" data-id="115" data-title="Neural Moss" data-desc="Ground-cover bio-circuitry capable of low-level data processing.">
+                <div class="item-inner">
+                    <span class="item-id">ID: 115</span>
+                    <img src="https://picsum.photos/seed/moss4/600/900" class="item-img" alt="Specimen">
+                    <div class="item-overlay">
+                        <h3 class="item-title">Neural Moss</h3>
+                        <span class="mono">View Analysis</span>
+                    </div>
+                </div>
+            </article>
+
+            <article class="grid-item" data-id="201" data-title="Bamboo Structure" data-desc="Rapid growth rendering test. Achieving 1 meter of digital geometry per 0.04 seconds.">
+                <div class="item-inner">
+                    <span class="item-id">ID: 201</span>
+                    <img src="https://picsum.photos/seed/bamboo5/600/650" class="item-img" alt="Specimen">
+                    <div class="item-overlay">
+                        <h3 class="item-title">Bamboo Structure</h3>
+                        <span class="mono">View Analysis</span>
+                    </div>
+                </div>
+            </article>
+
+            <article class="grid-item" data-id="304" data-title="Orchid Light" data-desc="Spectral absorption analysis across the visible and ultraviolet spectrum.">
+                <div class="item-inner">
+                    <span class="item-id">ID: 304</span>
+                    <img src="https://picsum.photos/seed/orchid6/600/750" class="item-img" alt="Specimen">
+                    <div class="item-overlay">
+                        <h3 class="item-title">Orchid Light</h3>
+                        <span class="mono">View Analysis</span>
+                    </div>
+                </div>
+            </article>
+        </div>
+    </section>
+
+    <!-- FOOTER -->
+    <footer>
+        <div class="container">
+            <a href="mailto:hello@aura.lab" class="footer-cta">Initiate Collaboration</a>
+            <div class="mono" style="color: var(--text-muted); display: flex; justify-content: center; gap: 2rem;">
+                <span>AURA LAB © 2044</span>
+                <span>GITHUB</span>
+                <span>TWITTER</span>
+                <span>LEGAL</span>
+            </div>
+        </div>
+    </footer>
+
+    <!-- MODAL -->
+    <div id="modal">
+        <button class="modal-close" onclick="closeModal()">&times;</button>
+        <div class="modal-content">
+            <div class="modal-img-container">
+                <div class="scan-line"></div>
+                <img src="" alt="" class="modal-img" id="modal-img">
+            </div>
+            <div class="modal-info">
+                <span class="mono" style="color: var(--accent-green); margin-bottom: 1rem;" id="modal-id">ID: 000</span>
+                <h2 style="font-size: 2.5rem; margin-bottom: 1.5rem; color: #fff;" id="modal-title">Specimen Name</h2>
+                <p style="color: var(--text-muted); margin-bottom: 2rem;" id="modal-desc">
+                    Description goes here...
+                </p>
+                <div style="margin-top: auto;">
+                    <span class="mono" style="display: block; margin-bottom: 10px;">METADATA</span>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-family: var(--font-mono); font-size: 0.8rem; color: #fff;">
+                        <div style="background: #222; padding: 10px;">HEIGHT: 1.2m</div>
+                        <div style="background: #222; padding: 10px;">AGE: 42 DAYS</div>
+                        <div style="background: #222; padding: 10px;">GENUS: DIGITALIS</div>
+                        <div style="background: #222; padding: 10px;">HEALTH: 98%</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <script>
-        /**
-         * 1. THREE.JS NOISE BACKGROUND (Minimal Fog)
-         */
+        // --- 1. PRELOADER & INITIALIZATION ---
+        window.addEventListener('load', () => {
+            const tl = gsap.timeline();
+
+            tl.to('.loader-progress', {
+                width: '100%',
+                duration: 1.5,
+                ease: 'power2.inOut'
+            })
+            .to('.loader-text', {
+                opacity: 0,
+                duration: 0.5
+            })
+            .to('#loader', {
+                y: '-100%',
+                duration: 1,
+                ease: 'expo.inOut'
+            })
+            .to('.hero-title', {
+                opacity: 1,
+                y: 0,
+                duration: 1,
+                ease: 'power3.out'
+            }, "-=0.5")
+            .to('.hero-desc', {
+                opacity: 1,
+                y: 0,
+                duration: 1,
+                ease: 'power3.out'
+            }, "-=0.8");
+        });
+
+        // --- 2. CUSTOM CURSOR LOGIC ---
+        const cursor = document.getElementById('cursor');
+        const magnets = document.querySelectorAll('.magnetic, a, button, .grid-item');
+
+        document.addEventListener('mousemove', (e) => {
+            cursor.style.left = e.clientX + 'px';
+            cursor.style.top = e.clientY + 'px';
+        });
+
+        magnets.forEach(el => {
+            el.addEventListener('mouseenter', () => cursor.classList.add('hovered'));
+            el.addEventListener('mouseleave', () => cursor.classList.remove('hovered'));
+        });
+
+        // --- 3. THREE.JS INTERACTIVE BACKGROUND ---
         const initThreeJS = () => {
             const container = document.getElementById('canvas-container');
             const scene = new THREE.Scene();
-            const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
-            const renderer = new THREE.WebGLRenderer({ alpha: true });
             
+            // Fog for depth
+            scene.fog = new THREE.FogExp2(0x0a0f0d, 0.035);
+
+            const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.z = 5;
+
+            const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
             renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(window.devicePixelRatio);
             container.appendChild(renderer.domElement);
 
-            const geometry = new THREE.PlaneGeometry(2, 2);
+            // Procedural "Digital Flora" Geometry
+            const geometry = new THREE.IcosahedronGeometry(1.5, 40); // High detail for displacement
+            const count = geometry.attributes.position.count;
             
-            const uniforms = {
-                u_time: { value: 0.0 },
-                u_resolution: { value: new THREE.Vector2(window.innerWidth, window.innerHeight) },
-                u_color_a: { value: new THREE.Vector3(0.95, 0.95, 0.95) }, // Off white
-                u_color_b: { value: new THREE.Vector3(0.9, 0.95, 0.9) }   // Slight green tint
-            };
+            // Add custom attribute for random growth
+            const randoms = new Float32Array(count);
+            for(let i = 0; i < count; i++) {
+                randoms[i] = Math.random();
+            }
+            geometry.setAttribute('aRandom', new THREE.BufferAttribute(randoms, 1));
 
-            const fragmentShader = `
-                uniform float u_time;
-                uniform vec2 u_resolution;
-                uniform vec3 u_color_a;
-                uniform vec3 u_color_b;
-
-                // Simplex Noise Function
-                vec3 permute(vec3 x) { return mod(((x*34.0)+1.0)*x, 289.0); }
-
-                float snoise(vec2 v){
-                    const vec4 C = vec4(0.211324865405187, 0.366025403784439,
-                            -0.577350269189626, 0.024390243902439);
-                    vec2 i  = floor(v + dot(v, C.yy) );
-                    vec2 x0 = v -   i + dot(i, C.xx);
-                    vec2 i1;
-                    i1 = (x0.x > x0.y) ? vec2(1.0, 0.0) : vec2(0.0, 1.0);
-                    vec4 x12 = x0.xyxy + C.xxzz;
-                    x12.xy -= i1;
-                    i = mod(i, 289.0);
-                    vec3 p = permute( permute( i.y + vec3(0.0, i1.y, 1.0 ))
-                        + i.x + vec3(0.0, i1.x, 1.0 ));
-                    vec3 m = max(0.5 - vec3(dot(x0,x0), dot(x12.xy,x12.xy), dot(x12.zw,x12.zw)), 0.0);
-                    m = m*m ;
-                    m = m*m ;
-                    vec3 x = 2.0 * fract(p * C.www) - 1.0;
-                    vec3 h = abs(x) - 0.5;
-                    vec3 ox = floor(x + 0.5);
-                    vec3 a0 = x - ox;
-                    m *= 1.79284291400159 - 0.85373472095314 * ( a0*a0 + h*h );
-                    vec3 g;
-                    g.x  = a0.x  * x0.x  + h.x  * x0.y;
-                    g.yz = a0.yz * x12.xz + h.yz * x12.yw;
-                    return 130.0 * dot(m, g);
-                }
-
-                void main() {
-                    vec2 st = gl_FragCoord.xy / u_resolution.xy;
-                    float t = u_time * 0.1; // Slow movement
-                    
-                    // Layered noise for "fog" effect
-                    float n = snoise(st * 3.0 + t);
-                    n += 0.5 * snoise(st * 6.0 - t);
-                    
-                    // Mix colors based on noise
-                    vec3 color = mix(u_color_a, u_color_b, n * 0.5 + 0.5);
-                    
-                    // Subtle grain
-                    float grain = fract(sin(dot(st.xy, vec2(12.9898,78.233))) * 43758.5453);
-                    color += grain * 0.03;
-
-                    gl_FragColor = vec4(color, 1.0);
-                }
-            `;
-
-            const material = new THREE.ShaderMaterial({
-                uniforms: uniforms,
-                fragmentShader: fragmentShader,
-                vertexShader: `void main() { gl_Position = vec4( position, 1.0 ); }`
+            const material = new THREE.MeshStandardMaterial({
+                color: 0x0a0f0d,
+                emissive: 0x2dd4bf,
+                emissiveIntensity: 0.2,
+                wireframe: true,
+                roughness: 0.5,
+                metalness: 0.8
             });
 
-            const plane = new THREE.Mesh(geometry, material);
-            scene.add(plane);
+            const flora = new THREE.Mesh(geometry, material);
+            scene.add(flora);
+
+            // Particles floating around
+            const particlesGeom = new THREE.BufferGeometry();
+            const particleCount = 200;
+            const posArray = new Float32Array(particleCount * 3);
+            for(let i=0; i < particleCount * 3; i++) {
+                posArray[i] = (Math.random() - 0.5) * 15;
+            }
+            particlesGeom.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
+            const particlesMat = new THREE.PointsMaterial({
+                size: 0.02,
+                color: 0x4ade80,
+                transparent: true,
+                opacity: 0.8
+            });
+            const particlesMesh = new THREE.Points(particlesGeom, particlesMat);
+            scene.add(particlesMesh);
+
+            // Lighting
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+            scene.add(ambientLight);
+
+            const pointLight = new THREE.PointLight(0x4ade80, 2, 20);
+            pointLight.position.set(5, 5, 5);
+            scene.add(pointLight);
+
+            const pointLight2 = new THREE.PointLight(0x2dd4bf, 2, 20);
+            pointLight2.position.set(-5, -5, 5);
+            scene.add(pointLight2);
+
+            // Interaction Variables
+            let mouseX = 0;
+            let mouseY = 0;
+            let targetX = 0;
+            let targetY = 0;
+
+            const windowHalfX = window.innerWidth / 2;
+            const windowHalfY = window.innerHeight / 2;
+
+            document.addEventListener('mousemove', (event) => {
+                mouseX = (event.clientX - windowHalfX);
+                mouseY = (event.clientY - windowHalfY);
+            });
+
+            const clock = new THREE.Clock();
 
             const animate = () => {
                 requestAnimationFrame(animate);
-                uniforms.u_time.value += 0.05;
+                const elapsedTime = clock.getElapsedTime();
+
+                targetX = mouseX * 0.001;
+                targetY = mouseY * 0.001;
+
+                // Smooth rotation
+                flora.rotation.y += 0.05 * (targetX - flora.rotation.y);
+                flora.rotation.x += 0.05 * (targetY - flora.rotation.x);
+                flora.rotation.z += 0.002; // Constant slow spin
+
+                // Pulse effect using time (vertex displacement simulation via scale)
+                const scale = 1 + Math.sin(elapsedTime * 0.5) * 0.05;
+                flora.scale.set(scale, scale, scale);
+
+                // Particle movement
+                particlesMesh.rotation.y = -mouseX * 0.0002;
+                particlesMesh.rotation.x = -mouseY * 0.0002;
+
                 renderer.render(scene, camera);
             };
 
             animate();
 
             window.addEventListener('resize', () => {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
                 renderer.setSize(window.innerWidth, window.innerHeight);
-                uniforms.u_resolution.value.x = window.innerWidth;
-                uniforms.u_resolution.value.y = window.innerHeight;
             });
         };
 
         initThreeJS();
 
-        /**
-         * 2. INTERSECTION OBSERVER (Scroll Reveal)
-         */
-        const observerOptions = {
-            threshold: 0.1,
-            rootMargin: "0px 0px -50px 0px"
+        // --- 4. DATA VISUALIZATION (CANVAS) ---
+        const initBioCanvas = () => {
+            const canvas = document.getElementById('bio-canvas');
+            const ctx = canvas.getContext('2d');
+            let width, height;
+
+            const resize = () => {
+                width = canvas.parentElement.offsetWidth;
+                height = canvas.parentElement.offsetHeight;
+                canvas.width = width;
+                canvas.height = height;
+            };
+            resize();
+            window.addEventListener('resize', resize);
+
+            const lines = [];
+            const numLines = 5;
+            
+            for(let i=0; i<numLines; i++) {
+                lines.push({
+                    offset: Math.random() * 100,
+                    speed: 0.02 + Math.random() * 0.03,
+                    amplitude: 20 + Math.random() * 50,
+                    color: i % 2 === 0 ? '#4ade80' : '#2dd4bf'
+                });
+            }
+
+            let time = 0;
+
+            const draw = () => {
+                ctx.clearRect(0, 0, width, height);
+                time += 1;
+
+                lines.forEach((line, index) => {
+                    ctx.beginPath();
+                    ctx.strokeStyle = line.color;
+                    ctx.lineWidth = 1.5;
+
+                    for(let x=0; x<width; x+=5) {
+                        const y = height/2 + 
+                                  Math.sin((x * 0.01) + (time * line.speed) + line.offset) * line.amplitude +
+                                  Math.sin((x * 0.03) + (time * line.speed * 1.5)) * (line.amplitude * 0.5);
+                        
+                        if(x===0) ctx.moveTo(x, y);
+                        else ctx.lineTo(x, y);
+                    }
+                    ctx.stroke();
+                });
+
+                requestAnimationFrame(draw);
+            };
+
+            draw();
         };
 
-        const observer = new IntersectionObserver((entries) => {
-            entries.forEach(entry => {
-                if (entry.isIntersecting) {
-                    entry.target.classList.add('in-view');
-                    observer.unobserve(entry.target); // Only animate once
-                }
-            });
-        }, observerOptions);
+        initBioCanvas();
 
-        document.querySelectorAll('.grid-item').forEach(item => {
-            observer.observe(item);
+        // --- 5. NUMBER ANIMATION ---
+        const animateNumbers = () => {
+            const stat1 = document.getElementById('stat-1');
+            const stat2 = document.getElementById('stat-2');
+            
+            setInterval(() => {
+                let val1 = 80 + Math.random() * 5;
+                let val2 = 1.2 + Math.random() * 0.4;
+                stat1.innerText = val1.toFixed(2) + '%';
+                stat2.innerText = val2.toFixed(2) + ' mg/L';
+            }, 2000);
+        };
+        animateNumbers();
+
+        // --- 6. SCROLL ANIMATIONS (GSAP) ---
+        gsap.registerPlugin(ScrollTrigger);
+
+        gsap.utils.toArray('.grid-item').forEach((item, i) => {
+            gsap.to(item, {
+                scrollTrigger: {
+                    trigger: item,
+                    start: "top 90%",
+                },
+                opacity: 1,
+                y: 0,
+                duration: 0.8,
+                delay: i * 0.05,
+                ease: "power2.out"
+            });
         });
 
-        /**
-         * 3. SIDE PROGRESS BAR
-         */
-        const progressBar = document.getElementById('progress-bar');
-        
-        window.addEventListener('scroll', () => {
-            const scrollTop = window.scrollY;
-            const docHeight = document.body.scrollHeight - window.innerHeight;
-            const scrollPercent = (scrollTop / docHeight) * 100;
+        // --- 7. MODAL & MENU LOGIC ---
+        function toggleMenu() {
+            const menu = document.querySelector('.menu-overlay');
+            const links = document.querySelectorAll('.menu-link');
             
-            progressBar.style.height = `${scrollPercent}%`;
+            if(!menu.classList.contains('active')) {
+                menu.classList.add('active');
+                links.forEach((link, i) => {
+                    gsap.to(link, {
+                        opacity: 1,
+                        y: 0,
+                        duration: 0.5,
+                        delay: 0.2 + (i * 0.1)
+                    });
+                });
+            } else {
+                links.forEach(link => gsap.to(link, { opacity: 0, y: 20, duration: 0.3 }));
+                setTimeout(() => menu.classList.remove('active'), 300);
+            }
+        }
+
+        const modal = document.getElementById('modal');
+        const gridItems = document.querySelectorAll('.grid-item');
+
+        gridItems.forEach(item => {
+            item.addEventListener('click', () => {
+                const img = item.querySelector('img').src;
+                const id = item.dataset.id;
+                const title = item.dataset.title;
+                const desc = item.dataset.desc;
+
+                document.getElementById('modal-img').src = img;
+                document.getElementById('modal-id').innerText = `ID: ${id}`;
+                document.getElementById('modal-title').innerText = title;
+                document.getElementById('modal-desc').innerText = desc;
+
+                modal.classList.add('open');
+            });
+        });
+
+        function closeModal() {
+            modal.classList.remove('open');
+        }
+
+        modal.addEventListener('click', (e) => {
+            if(e.target === modal) closeModal();
         });
 
     </script>
 </body>
-  </html>
+</html>
